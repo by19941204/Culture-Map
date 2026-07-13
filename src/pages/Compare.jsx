@@ -8,12 +8,13 @@ import CountrySelect from '../components/CountrySelect'
 import CultureMapChart from '../components/CultureMapChart'
 import GapBadge from '../components/GapBadge'
 import { useLang } from '../i18n/LanguageContext'
+import { loadPref, savePref } from '../lib/storage'
 
 const isCode = (v) => countries.some((c) => c.code === v)
 
 function initial(param, storageKey, fallback) {
   if (param && isCode(param)) return param
-  const saved = localStorage.getItem(storageKey)
+  const saved = loadPref(storageKey)
   if (saved && isCode(saved)) return saved
   return fallback
 }
@@ -88,7 +89,7 @@ export default function Compare() {
   const [myCode, setMyCode] = useState(() => initial(searchParams.get('me'), 'cm-me', 'CN'))
   const [theirCode, setTheirCode] = useState(() => initial(searchParams.get('them'), 'cm-them', 'US'))
   const [context, setContext] = useState(() => {
-    const p = searchParams.get('ctx') || localStorage.getItem('cm-context')
+    const p = searchParams.get('ctx') || loadPref('cm-context')
     return p === 'travel' ? 'travel' : 'work'
   })
   // per-pairing user overrides on top of the "top 3 gaps start expanded" default,
@@ -96,9 +97,9 @@ export default function Compare() {
   const [overrides, setOverrides] = useState({ key: '', map: {} })
 
   useEffect(() => {
-    localStorage.setItem('cm-me', myCode)
-    localStorage.setItem('cm-them', theirCode)
-    localStorage.setItem('cm-context', context)
+    savePref('cm-me', myCode)
+    savePref('cm-them', theirCode)
+    savePref('cm-context', context)
     setSearchParams({ me: myCode, them: theirCode, ctx: context }, { replace: true })
   }, [myCode, theirCode, context, setSearchParams])
 

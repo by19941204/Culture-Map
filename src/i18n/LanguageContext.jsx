@@ -1,10 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { translations } from './translations'
+import { loadPref, savePref } from '../lib/storage'
 
 const LanguageContext = createContext(null)
 
 function initialLang() {
-  const saved = localStorage.getItem('cm-lang')
+  const saved = loadPref('cm-lang')
   if (saved === 'zh' || saved === 'en') return saved
   return navigator.language?.toLowerCase().startsWith('zh') ? 'zh' : 'en'
 }
@@ -13,7 +14,7 @@ export function LanguageProvider({ children }) {
   const [lang, setLang] = useState(initialLang)
 
   useEffect(() => {
-    localStorage.setItem('cm-lang', lang)
+    savePref('cm-lang', lang)
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
   }, [lang])
 

@@ -3,6 +3,7 @@ import { ArrowLeft, ArrowLeftRight, Briefcase, Plane } from 'lucide-react'
 import { countries, regions } from '../data/countries'
 import CultureMapChart from '../components/CultureMapChart'
 import { useLang } from '../i18n/LanguageContext'
+import { loadPref } from '../lib/storage'
 
 function TipList({ title, icon: Icon, tips }) {
   return (
@@ -39,7 +40,7 @@ export default function CountryDetail() {
     )
   }
 
-  const me = localStorage.getItem('cm-me') || 'CN'
+  const me = loadPref('cm-me') || 'CN'
   const compareTarget =
     me === country.code
       ? `/?me=${country.code}&them=${country.code === 'US' ? 'CN' : 'US'}`

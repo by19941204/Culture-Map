@@ -5,12 +5,12 @@ import GapBadge from './GapBadge'
 // Percent position clamped so a dot never bleeds past the track ends.
 const pos = (v) => `${2 + (Math.max(0, Math.min(100, v)) / 100) * 96}%`
 
-function Dot({ value, country, colorClass, pick }) {
+function Dot({ value, country, colorClass, pick, nudge = 0 }) {
   return (
     <span
       tabIndex={0}
       className={`group absolute top-1/2 z-10 block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 cursor-default rounded-full ring-2 ring-card ${colorClass}`}
-      style={{ left: pos(value) }}
+      style={{ left: pos(value), marginTop: nudge }}
       aria-label={`${pick(country, 'name')}: ${value}/100`}
     >
       <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-card px-2 py-1 text-xs text-ink shadow-md group-hover:block group-focus-visible:block">
@@ -47,6 +47,8 @@ export default function CultureMapChart({ a, b }) {
         {dimensions.map((dim) => {
           const av = a.scores[dim.id]
           const bv = b?.scores[dim.id]
+          // nudge near-identical dots apart vertically so neither hides the other
+          const nudge = b && Math.abs(av - bv) < 4 ? 4 : 0
           return (
             <div key={dim.id} className="py-3">
               <div className="mb-1 flex items-baseline justify-between gap-2">
@@ -66,8 +68,8 @@ export default function CultureMapChart({ a, b }) {
                     aria-hidden
                   />
                 )}
-                <Dot value={av} country={a} colorClass="bg-me" pick={pick} />
-                {b && <Dot value={bv} country={b} colorClass="bg-them" pick={pick} />}
+                <Dot value={av} country={a} colorClass="bg-me" pick={pick} nudge={-nudge} />
+                {b && <Dot value={bv} country={b} colorClass="bg-them" pick={pick} nudge={nudge} />}
               </div>
 
               <div className="mt-0.5 flex justify-between gap-4 text-[11px] leading-tight text-ink3">

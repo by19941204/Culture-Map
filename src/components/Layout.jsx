@@ -18,10 +18,10 @@ export default function Layout() {
     <div className="min-h-screen bg-page text-ink">
       <header className="sticky top-0 z-40 border-b border-line bg-page/90 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-5xl items-center gap-2 px-4">
-          <NavLink to="/" className="flex items-center gap-2 font-semibold">
+          <NavLink to="/" className="flex items-center gap-2 whitespace-nowrap font-semibold">
             <span aria-hidden>🧭</span>
-            <span>{t('app.name')}</span>
-            <span className="hidden text-xs font-normal text-ink3 sm:inline">{t('app.tagline')}</span>
+            <span className="hidden sm:inline">{t('app.name')}</span>
+            <span className="hidden text-xs font-normal text-ink3 md:inline">{t('app.tagline')}</span>
           </NavLink>
 
           <nav className="ml-auto flex items-center gap-1" aria-label="Main">
@@ -31,7 +31,7 @@ export default function Layout() {
                 to={to}
                 end={end}
                 className={({ isActive }) =>
-                  `flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm transition-colors ${
+                  `flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-sm transition-colors sm:px-2.5 ${
                     isActive ? 'bg-card font-medium text-accent shadow-sm' : 'text-ink2 hover:text-ink'
                   }`
                 }

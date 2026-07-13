@@ -1,9 +1,10 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import { loadPref, savePref } from '../lib/storage'
 
 const ThemeContext = createContext(null)
 
 function initialTheme() {
-  const saved = localStorage.getItem('cm-theme')
+  const saved = loadPref('cm-theme')
   if (saved === 'light' || saved === 'dark') return saved
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
@@ -13,7 +14,7 @@ export function ThemeProvider({ children }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
-    localStorage.setItem('cm-theme', theme)
+    savePref('cm-theme', theme)
   }, [theme])
 
   const toggle = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
