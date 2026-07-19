@@ -1,6 +1,7 @@
 # Culture Map · 跨文化协作指南
 
-一个基于 Erin Meyer《The Culture Map》（文化地图）框架的跨文化速查 Web 应用。
+一个基于 Erin Meyer《The Culture Map》（文化地图）框架的跨文化速查应用，
+包含 **iOS 手机 app**（`mobile/`，Expo/React Native）和 Web 版（仓库根目录）。
 在跨国合作或出国旅行前，选择你的文化背景和对方的文化，即可：
 
 - 📊 在 **8 个文化维度**（沟通方式、评价反馈、说服方式、领导方式、决策方式、信任建立、分歧处理、时间观念）上直观对比两种文化的位置
@@ -13,7 +14,32 @@
 > culture and your counterpart's, see where the two differ across 8 dimensions,
 > and get concrete, actionable advice for work meetings and travel.
 
-## 本地运行 Getting started
+## 📱 iOS 手机 App（推荐）
+
+`mobile/` 目录是 Expo (React Native) 应用，与 Web 版共用同一份数据源。
+
+**在 iPhone 上运行（无需 Mac，无需开发者账号）：**
+
+1. iPhone 的 App Store 安装免费的 **Expo Go**
+2. 电脑上运行：
+   ```bash
+   cd mobile
+   npm install
+   npx expo start          # 局域网模式；跨网络加 --tunnel
+   ```
+3. 用 iPhone 相机扫终端里的二维码，应用即在 Expo Go 中打开
+
+**打包成独立 App（TestFlight / App Store，无需 Mac）：**
+
+```bash
+cd mobile
+npm install -g eas-cli
+eas login                  # 免费 Expo 账号
+eas build --platform ios   # 云端构建（上架需 Apple Developer 账号，$99/年）
+eas submit --platform ios  # 提交 TestFlight / App Store
+```
+
+## 🖥 Web 版 Getting started
 
 ```bash
 npm install
@@ -22,13 +48,14 @@ npm run build     # 生产构建，输出到 dist/
 npm run preview   # 预览生产构建
 ```
 
+Web 版在 iPhone Safari 中也可「分享 → 添加到主屏幕」作为轻量应用使用。
+
 ## 技术栈 Tech stack
 
-- React 19 + Vite 8
-- Tailwind CSS 4
-- React Router 7
-- lucide-react 图标
-- 无后端：所有文化数据打包在前端，可离线使用（旅行场景友好）
+- **iOS app**: Expo SDK 57 (React Native 0.86) + React Navigation 7 + AsyncStorage
+- **Web**: React 19 + Vite 8 + Tailwind CSS 4 + React Router 7
+- 数据共享：`src/data/`（40 国 × 8 维度双语数据）与建议引擎 `src/lib/advice.js` 由两端共用（`mobile/metro.config.js` 指向仓库根目录）
+- 无后端：所有文化数据打包在应用内，可离线使用（旅行场景友好）
 
 ## 数据说明 Data disclaimer
 
