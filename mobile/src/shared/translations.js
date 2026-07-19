@@ -1,3 +1,4 @@
+// AUTO-SYNCED from src/i18n/translations.js — do not edit here; run `npm run sync` in mobile/.
 export const translations = {
   'app.name': { zh: 'Culture Map', en: 'Culture Map' },
   'app.tagline': { zh: '跨文化协作指南', en: 'Cross-culture quick guide' },
