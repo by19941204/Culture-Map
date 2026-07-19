@@ -140,6 +140,7 @@ export default function CountryPicker({ value, onChange, label, colorKey }) {
             keyExtractor={(c) => c.code}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="on-drag"
+            automaticallyAdjustKeyboardInsets
             stickySectionHeadersEnabled={false}
             contentContainerStyle={styles.listContent}
             testID="picker-list"

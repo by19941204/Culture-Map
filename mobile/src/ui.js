@@ -31,7 +31,6 @@ export function Screen({ title, children, scroll = true, headerExtra = null }) {
         {headerExtra}
         <Pressable
           onPress={toggleLang}
-          hitSlop={8}
           style={styles.headerBtn}
           accessibilityRole="button"
           accessibilityLabel={lang === 'zh' ? 'Switch to English' : '切换到中文'}
@@ -44,7 +43,6 @@ export function Screen({ title, children, scroll = true, headerExtra = null }) {
         </Pressable>
         <Pressable
           onPress={toggleTheme}
-          hitSlop={8}
           style={styles.headerBtn}
           accessibilityRole="button"
           accessibilityLabel={dark ? 'Light mode' : 'Dark mode'}
@@ -104,7 +102,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   headerTitle: { fontSize: 17, fontWeight: '600', flex: 1 },
-  headerBtn: { flexDirection: 'row', alignItems: 'center', padding: 4 },
+  headerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 44,
+    minHeight: 44,
+  },
   body: { padding: 16, paddingBottom: 32, gap: 16 },
   card: {
     borderWidth: StyleSheet.hairlineWidth,

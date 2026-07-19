@@ -24,12 +24,12 @@ function LegendItem({ color, country, pick, testID }) {
   )
 }
 
-function Dot({ id, x, nudge, color, label, active, onToggle, testID }) {
+function Dot({ id, x, nudge, color, label, active, onToggle, hitSlop, testID }) {
   const { colors } = useTheme()
   return (
     <Pressable
       onPress={() => onToggle(id)}
-      hitSlop={14}
+      hitSlop={hitSlop}
       accessibilityRole="button"
       accessibilityLabel={label}
       accessibilityState={{ selected: active }}
@@ -63,6 +63,27 @@ function DimensionRow({ dim, a, b }) {
   const ax = trackWidth * frac(av)
   const bx = b ? trackWidth * frac(bv) : 0
 
+  // When the dots sit close together, their expanded touch rects would
+  // overlap and the later sibling would steal every tap — so shrink the
+  // per-dot slop and let the track itself resolve taps to the nearest dot.
+  const close = b != null && Math.abs(ax - bx) < 44
+  const dotSlop = close ? 2 : 14
+  const onTrackPress = (e) => {
+    const { locationX, locationY } = e.nativeEvent
+    if (!b) {
+      toggle('a')
+      return
+    }
+    const da = Math.abs(locationX - ax)
+    const db = Math.abs(locationX - bx)
+    if (Math.abs(da - db) < 2 && nudge) {
+      // x-tie on vertically nudged dots: the top half belongs to 'a'
+      toggle(locationY <= TRACK_HEIGHT / 2 ? 'a' : 'b')
+    } else {
+      toggle(da <= db ? 'a' : 'b')
+    }
+  }
+
   const activeCountry = active === 'a' ? a : active === 'b' ? b : null
   const activeValue = active === 'a' ? av : bv
 
@@ -75,9 +96,11 @@ function DimensionRow({ dim, a, b }) {
         {b ? <GapBadge gap={bv - av} /> : null}
       </View>
 
-      <View
+      <Pressable
         style={styles.track}
         onLayout={(e) => setTrackWidth(e.nativeEvent.layout.width)}
+        onPress={onTrackPress}
+        accessible={false}
       >
         <View style={[styles.trackLine, { backgroundColor: colors.line }]} />
         {trackWidth > 0 ? (
@@ -102,6 +125,7 @@ function DimensionRow({ dim, a, b }) {
               label={`${dimName} — ${pick(a, 'name')}: ${av}/100`}
               active={active === 'a'}
               onToggle={toggle}
+              hitSlop={dotSlop}
               testID={`dot-${dim.id}-a`}
             />
             {b ? (
@@ -113,12 +137,13 @@ function DimensionRow({ dim, a, b }) {
                 label={`${dimName} — ${pick(b, 'name')}: ${bv}/100`}
                 active={active === 'b'}
                 onToggle={toggle}
+                hitSlop={dotSlop}
                 testID={`dot-${dim.id}-b`}
               />
             ) : null}
           </>
         ) : null}
-      </View>
+      </Pressable>
 
       {activeCountry ? (
         <Text style={[styles.readout, { color: colors.ink2 }]} testID={`readout-${dim.id}`}>

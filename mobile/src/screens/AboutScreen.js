@@ -72,8 +72,8 @@ export default function AboutScreen() {
         </Text>
         <Text style={[styles.para, { color: colors.ink2 }]}>
           {zh
-            ? '本应用不收集任何数据：没有后端、没有统计脚本，你的选择只保存在自己浏览器的本地存储中。'
-            : 'This app collects no data: no backend, no analytics. Your selections live only in your browser’s local storage.'}
+            ? '本应用不收集任何数据：没有后端、没有统计脚本，你的选择只保存在这台设备的本地存储中。'
+            : 'This app collects no data: no backend, no analytics. Your selections live only on this device.'}
         </Text>
       </Card>
 

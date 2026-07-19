@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Feather } from '@expo/vector-icons'
-import { useRoute } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { Bullet, Card, Screen, SectionTitle } from '../ui'
 import { useTheme } from '../theme'
 import { useLang } from '../i18n'
@@ -31,7 +31,6 @@ function AdviceCard({ entry, ctx, expanded, onToggle, holisticApplies }) {
         onPress={onToggle}
         accessibilityRole="button"
         accessibilityState={{ expanded }}
-        accessibilityLabel={pick(entry.dim, 'name')}
         testID={`advice-${entry.dim.id}`}
         style={styles.adviceHeader}
       >
@@ -104,11 +103,16 @@ export default function CompareScreen() {
     isCtx,
   )
 
-  // Other screens can navigate here with { them: code }.
+  // Other screens can navigate here with { them: code }. Consume-and-clear
+  // the param so navigating again with the SAME code still re-applies it.
+  const navigation = useNavigation()
   const routeThem = route.params?.them
   useEffect(() => {
-    if (routeThem && isCode(routeThem)) setThem(routeThem)
-  }, [routeThem, setThem])
+    if (routeThem && isCode(routeThem)) {
+      setThem(routeThem)
+      navigation.setParams({ them: undefined })
+    }
+  }, [routeThem, setThem, navigation])
 
   // Per-pairing user overrides on top of the "top 3 gaps start expanded"
   // default, so switching countries resets the accordion without an effect.
@@ -215,7 +219,6 @@ export default function CompareScreen() {
                   key={r.dim.id}
                   onPress={() => setOpen(r.dim.id, true)}
                   accessibilityRole="button"
-                  accessibilityLabel={pick(r.dim, 'name')}
                   testID={`topgap-${r.dim.id}`}
                 >
                   <Card>

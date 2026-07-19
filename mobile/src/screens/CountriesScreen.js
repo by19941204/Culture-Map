@@ -23,7 +23,6 @@ function CountryRow({ country, onPress }) {
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={pick(country, 'name')}
       testID={`country-${country.code}`}
       style={({ pressed }) => [
         styles.row,
