@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { dimensions } from '../data/dimensions'
 import { useLang } from '../i18n/LanguageContext'
 import GapBadge from './GapBadge'
@@ -5,18 +6,26 @@ import GapBadge from './GapBadge'
 // Percent position clamped so a dot never bleeds past the track ends.
 const pos = (v) => `${2 + (Math.max(0, Math.min(100, v)) / 100) * 96}%`
 
-function Dot({ value, country, colorClass, pick, nudge = 0 }) {
+// A dot is a real button: hover/focus shows the tooltip on desktop, and a tap
+// toggles it on touch devices (where hover/focus-visible never fire).
+function Dot({ id, value, country, dimName, colorClass, pick, nudge = 0, active, onToggle }) {
   return (
-    <span
-      tabIndex={0}
-      className={`group absolute top-1/2 z-10 block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 cursor-default rounded-full ring-2 ring-card ${colorClass}`}
+    <button
+      type="button"
+      onClick={() => onToggle(id)}
+      className={`group absolute top-1/2 z-10 block h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full ring-2 ring-card ${colorClass}`}
       style={{ left: pos(value), marginTop: nudge }}
-      aria-label={`${pick(country, 'name')}: ${value}/100`}
+      aria-label={`${dimName} — ${pick(country, 'name')}: ${value}/100`}
+      aria-pressed={active}
     >
-      <span className="pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 hidden -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-card px-2 py-1 text-xs text-ink shadow-md group-hover:block group-focus-visible:block">
+      <span
+        className={`pointer-events-none absolute bottom-full left-1/2 z-20 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded-md border border-line bg-card px-2 py-1 text-xs text-ink shadow-md ${
+          active ? 'block' : 'hidden group-hover:block group-focus-visible:block'
+        }`}
+      >
         {country.flag} {pick(country, 'name')} · {value}/100
       </span>
-    </span>
+    </button>
   )
 }
 
@@ -26,6 +35,8 @@ function Dot({ value, country, colorClass, pick, nudge = 0 }) {
  */
 export default function CultureMapChart({ a, b }) {
   const { t, pick } = useLang()
+  const [active, setActive] = useState(null)
+  const toggle = (id) => setActive((cur) => (cur === id ? null : id))
 
   return (
     <div>
@@ -49,10 +60,11 @@ export default function CultureMapChart({ a, b }) {
           const bv = b?.scores[dim.id]
           // nudge near-identical dots apart vertically so neither hides the other
           const nudge = b && Math.abs(av - bv) < 4 ? 4 : 0
+          const dimName = pick(dim, 'name')
           return (
             <div key={dim.id} className="py-3">
               <div className="mb-1 flex items-baseline justify-between gap-2">
-                <span className="text-sm font-medium">{pick(dim, 'name')}</span>
+                <span className="text-sm font-medium">{dimName}</span>
                 {b && <GapBadge gap={bv - av} />}
               </div>
 
@@ -68,8 +80,30 @@ export default function CultureMapChart({ a, b }) {
                     aria-hidden
                   />
                 )}
-                <Dot value={av} country={a} colorClass="bg-me" pick={pick} nudge={-nudge} />
-                {b && <Dot value={bv} country={b} colorClass="bg-them" pick={pick} nudge={nudge} />}
+                <Dot
+                  id={`${dim.id}:a`}
+                  value={av}
+                  country={a}
+                  dimName={dimName}
+                  colorClass="bg-me"
+                  pick={pick}
+                  nudge={-nudge}
+                  active={active === `${dim.id}:a`}
+                  onToggle={toggle}
+                />
+                {b && (
+                  <Dot
+                    id={`${dim.id}:b`}
+                    value={bv}
+                    country={b}
+                    dimName={dimName}
+                    colorClass="bg-them"
+                    pick={pick}
+                    nudge={nudge}
+                    active={active === `${dim.id}:b`}
+                    onToggle={toggle}
+                  />
+                )}
               </div>
 
               <div className="mt-0.5 flex justify-between gap-4 text-[11px] leading-tight text-ink3">

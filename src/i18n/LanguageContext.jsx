@@ -16,6 +16,7 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
     savePref('cm-lang', lang)
     document.documentElement.lang = lang === 'zh' ? 'zh-CN' : 'en'
+    document.title = `Culture Map · ${translations['app.tagline'][lang]}`
   }, [lang])
 
   const toggle = () => setLang((l) => (l === 'zh' ? 'en' : 'zh'))

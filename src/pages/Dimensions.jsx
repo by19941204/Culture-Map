@@ -20,7 +20,7 @@ function Pole({ heading, label, behaviors }) {
 }
 
 export default function Dimensions() {
-  const { pick, t } = useLang()
+  const { lang, pick, t } = useLang()
 
   return (
     <div className="space-y-4">
@@ -60,7 +60,7 @@ export default function Dimensions() {
               <p className="mt-3 flex gap-2 rounded-lg bg-page px-3 py-2 text-xs leading-relaxed text-ink2">
                 <Lightbulb size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden />
                 <span>
-                  <span className="font-medium">{t('compare.holistic')}：</span>
+                  <span className="font-medium">{t('compare.holistic')}{lang === 'zh' ? '：' : ': '}</span>
                   {pick(dim, 'holisticNote')}
                 </span>
               </p>

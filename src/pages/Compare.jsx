@@ -71,7 +71,7 @@ function AdviceCard({ entry, context, expanded, onToggle, holisticApplies }) {
             <p className="mt-3 flex gap-2 rounded-lg bg-page px-3 py-2 text-xs leading-relaxed text-ink2">
               <Lightbulb size={14} className="mt-0.5 shrink-0 text-accent" aria-hidden />
               <span>
-                <span className="font-medium">{t('compare.holistic')}：</span>
+                <span className="font-medium">{t('compare.holistic')}{lang === 'zh' ? '：' : ': '}</span>
                 {holisticNote}
               </span>
             </p>
@@ -161,15 +161,14 @@ export default function Compare() {
           />
         </div>
 
-        <div className="mt-3 flex rounded-xl border border-line bg-page p-1" role="tablist">
+        <div className="mt-3 flex rounded-xl border border-line bg-page p-1">
           {[
             { id: 'work', icon: Briefcase, key: 'context.work' },
             { id: 'travel', icon: Plane, key: 'context.travel' },
           ].map(({ id, icon: Icon, key }) => (
             <button
               key={id}
-              role="tab"
-              aria-selected={context === id}
+              aria-pressed={context === id}
               onClick={() => setContext(id)}
               className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-sm transition-colors ${
                 context === id ? 'bg-card font-medium text-accent shadow-sm' : 'text-ink2'
@@ -204,7 +203,14 @@ export default function Compare() {
                     key={r.dim.id}
                     onClick={() => {
                       setOpen(r.dim.id, true)
-                      document.getElementById(`advice-${r.dim.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                      const el = document.getElementById(`advice-${r.dim.id}`)
+                      el?.querySelector('button')?.focus({ preventScroll: true })
+                      el?.scrollIntoView({
+                        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+                          ? 'auto'
+                          : 'smooth',
+                        block: 'center',
+                      })
                     }}
                     className="rounded-2xl border border-line bg-card p-4 text-left shadow-sm hover:border-baseline"
                   >
@@ -247,7 +253,7 @@ export default function Compare() {
                     context={context}
                     expanded={isExpanded(r.dim.id)}
                     onToggle={() => setOpen(r.dim.id, !isExpanded(r.dim.id))}
-                    holisticApplies={r.dim.id === 'persuading' && (myC.holistic || theirC.holistic)}
+                    holisticApplies={r.dim.id === 'persuading' && theirC.holistic}
                   />
                 </div>
               ))}

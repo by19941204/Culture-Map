@@ -34,7 +34,6 @@ export const translations = {
   'compare.workTips': { zh: '商务礼仪速查', en: 'Business etiquette' },
   'compare.travelTips': { zh: '旅行礼仪速查', en: 'Travel etiquette' },
   'compare.theyLean': { zh: '对方更偏向', en: 'They lean' },
-  'compare.youLean': { zh: '你更偏向', en: 'You lean' },
   'compare.holistic': { zh: '整体思维文化', en: 'Holistic-thinking culture' },
 
   'gap.large': { zh: '显著差异', en: 'Big gap' },

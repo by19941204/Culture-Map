@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import { ChevronDown, Search } from 'lucide-react'
 import { countries, regionOrder, regions } from '../data/countries'
 import { useLang } from '../i18n/LanguageContext'
@@ -7,24 +7,29 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
   const { lang, t, pick } = useLang()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
+  const [highlight, setHighlight] = useState(0)
   const rootRef = useRef(null)
+  const triggerRef = useRef(null)
+  const listId = useId()
 
   const selected = countries.find((c) => c.code === value)
+
+  const close = (refocus = true) => {
+    setOpen(false)
+    setQuery('')
+    if (refocus) triggerRef.current?.focus()
+  }
 
   useEffect(() => {
     if (!open) return
     const onDown = (e) => {
-      if (rootRef.current && !rootRef.current.contains(e.target)) setOpen(false)
-    }
-    const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false)
+      if (rootRef.current && !rootRef.current.contains(e.target)) {
+        setOpen(false)
+        setQuery('')
+      }
     }
     document.addEventListener('mousedown', onDown)
-    document.addEventListener('keydown', onKey)
-    return () => {
-      document.removeEventListener('mousedown', onDown)
-      document.removeEventListener('keydown', onKey)
-    }
+    return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
   const groups = useMemo(() => {
@@ -39,20 +44,49 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
       .filter((g) => g.items.length > 0)
   }, [query])
 
+  const flat = useMemo(() => groups.flatMap((g) => g.items), [groups])
+  const highlighted = flat[Math.min(highlight, flat.length - 1)]
+
+  useEffect(() => {
+    if (!open || !highlighted) return
+    document.getElementById(`cs-opt-${listId}-${highlighted.code}`)?.scrollIntoView({ block: 'nearest' })
+  }, [open, highlighted, listId])
+
   const choose = (code) => {
     onChange(code)
-    setOpen(false)
-    setQuery('')
+    close()
+  }
+
+  const onKeyDown = (e) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlight((h) => Math.min(h + 1, flat.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlight((h) => Math.max(h - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      if (highlighted) choose(highlighted.code)
+    } else if (e.key === 'Escape') {
+      e.preventDefault()
+      close()
+    } else if (e.key === 'Tab') {
+      close(false)
+    }
   }
 
   return (
     <div ref={rootRef} className="relative min-w-0 flex-1">
-      <span className={`mb-1 flex items-center gap-1.5 text-xs font-medium text-ink2`}>
+      <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink2">
         <span className={`h-2.5 w-2.5 rounded-full ${colorClass}`} aria-hidden />
         {label}
       </span>
       <button
-        onClick={() => setOpen((o) => !o)}
+        ref={triggerRef}
+        onClick={() => {
+          setOpen((o) => !o)
+          setHighlight(0)
+        }}
         aria-expanded={open}
         aria-haspopup="listbox"
         className="flex w-full items-center gap-2 rounded-xl border border-line bg-card px-3 py-2.5 text-left shadow-sm hover:border-baseline"
@@ -77,14 +111,22 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
             <Search size={14} className="shrink-0 text-ink3" aria-hidden />
             <input
               autoFocus
+              role="combobox"
+              aria-expanded="true"
+              aria-controls={listId}
+              aria-activedescendant={highlighted ? `cs-opt-${listId}-${highlighted.code}` : undefined}
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setHighlight(0)
+              }}
+              onKeyDown={onKeyDown}
               placeholder={t('countries.search')}
               className="w-full bg-transparent text-sm outline-none placeholder:text-ink3"
             />
           </div>
-          <div role="listbox" className="max-h-72 overflow-y-auto py-1">
-            {groups.length === 0 && (
+          <div id={listId} role="listbox" className="max-h-72 overflow-y-auto py-1">
+            {flat.length === 0 && (
               <p className="px-3 py-3 text-sm text-ink3">{t('countries.empty')}</p>
             )}
             {groups.map((g) => (
@@ -95,12 +137,18 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
                 {g.items.map((c) => (
                   <button
                     key={c.code}
+                    id={`cs-opt-${listId}-${c.code}`}
                     role="option"
                     aria-selected={c.code === value}
+                    tabIndex={-1}
                     onClick={() => choose(c.code)}
-                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm hover:bg-page ${
-                      c.code === value ? 'font-medium text-accent' : ''
-                    }`}
+                    onMouseMove={() => {
+                      const idx = flat.indexOf(c)
+                      if (idx >= 0 && idx !== highlight) setHighlight(idx)
+                    }}
+                    className={`flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm ${
+                      highlighted?.code === c.code ? 'bg-page' : ''
+                    } ${c.code === value ? 'font-medium text-accent' : ''}`}
                   >
                     <span aria-hidden>{c.flag}</span>
                     <span>{pick(c, 'name')}</span>
