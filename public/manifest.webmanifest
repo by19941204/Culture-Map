@@ -1,0 +1,14 @@
+{
+  "name": "文化地图 Culture Map",
+  "short_name": "文化地图",
+  "description": "跨文化速查：对比 40 个国家/地区在 8 个文化维度上的差异，获得工作与旅行中的行动建议。",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#f9f9f7",
+  "theme_color": "#2a78d6",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

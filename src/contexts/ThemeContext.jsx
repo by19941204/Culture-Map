@@ -1,25 +1,28 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react'
+import { loadPref, savePref } from '../lib/storage'
 
-const ThemeContext = createContext();
+const ThemeContext = createContext(null)
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem('shiptracker-theme') || 'dark';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('shiptracker-theme', theme);
-    document.documentElement.classList.toggle('dark', theme === 'dark');
-    document.documentElement.classList.toggle('light', theme === 'light');
-  }, [theme]);
-
-  const toggleTheme = () => setTheme(t => t === 'dark' ? 'light' : 'dark');
-
-  return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
-      {children}
-    </ThemeContext.Provider>
-  );
+function initialTheme() {
+  const saved = loadPref('cm-theme')
+  if (saved === 'light' || saved === 'dark') return saved
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-export const useTheme = () => useContext(ThemeContext);
+export function ThemeProvider({ children }) {
+  const [theme, setTheme] = useState(initialTheme)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', theme === 'dark')
+    savePref('cm-theme', theme)
+  }, [theme])
+
+  const toggle = () => setTheme((t) => (t === 'dark' ? 'light' : 'dark'))
+
+  return <ThemeContext.Provider value={{ theme, toggle }}>{children}</ThemeContext.Provider>
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function useTheme() {
+  return useContext(ThemeContext)
+}

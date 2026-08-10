@@ -4,5 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/shipping-analytics/',
+  // GitHub Pages serves from /culture-map/; root-domain hosts (e.g. Railway)
+  // build with DEPLOY_BASE=/
+  base: process.env.DEPLOY_BASE || '/culture-map/',
 })
