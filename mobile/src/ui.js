@@ -56,10 +56,11 @@ export function Screen({ title, children, scroll = true, headerExtra = null }) {
   )
 }
 
-export function Card({ children, style }) {
+export function Card({ children, style, ...rest }) {
   const { colors } = useTheme()
   return (
     <View
+      {...rest}
       style={[
         { backgroundColor: colors.card, borderColor: colors.line },
         styles.card,

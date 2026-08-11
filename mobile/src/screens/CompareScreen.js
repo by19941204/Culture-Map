@@ -5,7 +5,7 @@ import { useNavigation, useRoute } from '@react-navigation/native'
 import { Bullet, Card, Screen, SectionTitle } from '../ui'
 import { useTheme } from '../theme'
 import { useLang } from '../i18n'
-import { adviceBranch, countries, dimensions, rankDimensions } from '../data'
+import { adviceBranch, countries, dimensions, overallDistance, rankDimensions } from '../data'
 import { usePersistedState } from '../prefs'
 import CountryPicker from '../components/CountryPicker'
 import CultureMapChart from '../components/CultureMapChart'
@@ -13,6 +13,44 @@ import GapBadge from '../components/GapBadge'
 
 const isCode = (v) => countries.some((c) => c.code === v)
 const isCtx = (v) => v === 'work' || v === 'travel'
+
+// Tiny two-dot spectrum so a gap's size is visible at a glance.
+function MiniSpectrum({ my, their }) {
+  const { colors } = useTheme()
+  const [w, setW] = useState(0)
+  const posX = (v) => w * (0.04 + (Math.max(0, Math.min(100, v)) / 100) * 0.92)
+  return (
+    <View style={styles.mini} onLayout={(e) => setW(e.nativeEvent.layout.width)} aria-hidden>
+      <View style={[styles.miniTrack, { backgroundColor: colors.line }]} />
+      {w > 0 && (
+        <>
+          <View
+            style={[
+              styles.miniConn,
+              {
+                backgroundColor: colors.baseline,
+                left: Math.min(posX(my), posX(their)),
+                width: Math.abs(posX(my) - posX(their)),
+              },
+            ]}
+          />
+          <View
+            style={[
+              styles.miniDot,
+              { backgroundColor: colors.me, borderColor: colors.card, left: posX(my) - 4 },
+            ]}
+          />
+          <View
+            style={[
+              styles.miniDot,
+              { backgroundColor: colors.them, borderColor: colors.card, left: posX(their) - 4 },
+            ]}
+          />
+        </>
+      )}
+    </View>
+  )
+}
 
 function AdviceCard({ entry, ctx, expanded, onToggle, holisticApplies }) {
   const { colors } = useTheme()
@@ -103,6 +141,18 @@ export default function CompareScreen() {
     isCtx,
   )
 
+  // counterparts compared recently, most recent first (comma-joined codes)
+  const [recentStr, setRecentStr] = usePersistedState(
+    'cm-recent',
+    initialPrefs?.['cm-recent'] ?? '',
+  )
+  const recordRecent = (code) =>
+    setRecentStr((prev) =>
+      [code, ...String(prev).split(',').filter((c) => isCode(c) && c !== code)]
+        .slice(0, 6)
+        .join(','),
+    )
+
   // Other screens can navigate here with { them: code }. Consume-and-clear
   // the param so navigating again with the SAME code still re-applies it.
   const navigation = useNavigation()
@@ -110,8 +160,10 @@ export default function CompareScreen() {
   useEffect(() => {
     if (routeThem && isCode(routeThem)) {
       setThem(routeThem)
+      recordRecent(routeThem)
       navigation.setParams({ them: undefined })
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routeThem, setThem, navigation])
 
   // Per-pairing user overrides on top of the "top 3 gaps start expanded"
@@ -138,7 +190,15 @@ export default function CompareScreen() {
     }))
 
   const topGaps = ranked.filter((r) => r.level !== 'aligned').slice(0, 3)
+  const distance = overallDistance(ranked)
   const tips = theirCountry && pick(theirCountry, ctx === 'work' ? 'workTips' : 'travelTips')
+
+  const recent = recentStr.split(',').filter(isCode)
+  const chooseThem = (code) => {
+    setThem(code)
+    recordRecent(code)
+  }
+  const recentChips = recent.filter((c) => c !== them && c !== me).slice(0, 4)
 
   const lean = (r) => {
     const label = pick(r.dim, r.gap > 0 ? 'highLabel' : 'lowLabel')
@@ -151,22 +211,48 @@ export default function CompareScreen() {
     <Screen title={t('compare.title')}>
       {/* selectors + scenario */}
       <Card>
-        <CountryPicker value={me} onChange={setMe} label={t('compare.me')} colorKey="me" />
-        <Pressable
-          onPress={() => {
-            const a = me
-            const b = them
-            setMe(b)
-            setThem(a)
-          }}
-          accessibilityRole="button"
-          accessibilityLabel={t('compare.swap')}
-          testID="swap"
-          style={[styles.swapBtn, { borderColor: colors.line }]}
-        >
-          <Feather name="repeat" size={16} color={colors.ink2} />
-        </Pressable>
-        <CountryPicker value={them} onChange={setThem} label={t('compare.them')} colorKey="them" />
+        {/* "me" is set once — keep it compact; the counterpart is the
+            everyday choice and gets the prominent picker */}
+        <View style={styles.meRow}>
+          <CountryPicker value={me} onChange={setMe} label={t('compare.me')} colorKey="me" compact />
+          <Pressable
+            onPress={() => {
+              const a = me
+              setMe(them)
+              chooseThem(a)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={t('compare.swap')}
+            testID="swap"
+            style={[styles.swapBtn, { borderColor: colors.line }]}
+          >
+            <Feather name="repeat" size={14} color={colors.ink2} />
+          </Pressable>
+        </View>
+        <CountryPicker value={them} onChange={chooseThem} label={t('compare.them')} colorKey="them" />
+
+        {recentChips.length > 0 && (
+          <View style={styles.recentRow}>
+            <Feather name="clock" size={12} color={colors.ink3} />
+            <Text style={[styles.recentLabel, { color: colors.ink3 }]}>{t('compare.recent')}</Text>
+            {recentChips.map((code) => {
+              const c = countries.find((x) => x.code === code)
+              return (
+                <Pressable
+                  key={code}
+                  onPress={() => chooseThem(code)}
+                  accessibilityRole="button"
+                  testID={`recent-${code}`}
+                  style={[styles.recentChip, { borderColor: colors.line }]}
+                >
+                  <Text style={[styles.recentChipText, { color: colors.ink2 }]}>
+                    {c.flag} {pick(c, 'name')}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        )}
 
         <View style={[styles.segment, { backgroundColor: colors.page, borderColor: colors.line }]}>
           {[
@@ -206,6 +292,37 @@ export default function CompareScreen() {
         </Card>
       ) : (
         <>
+          {/* the one-glance verdict first, details after */}
+          <Card testID="distance-card">
+            <View style={styles.distanceRow}>
+              <Text style={[styles.caption, { color: colors.ink2 }]}>{t('compare.distance')}</Text>
+              <Text style={[styles.distanceLevel, { color: colors.ink }]}>
+                {t(`distance.${distance.level}`)}
+              </Text>
+            </View>
+            <View style={[styles.distanceTrack, { backgroundColor: colors.line }]}>
+              <View
+                style={[
+                  styles.distanceFill,
+                  {
+                    backgroundColor: colors.accent,
+                    width: `${Math.min(100, (distance.avg / 40) * 100)}%`,
+                  },
+                ]}
+              />
+            </View>
+            {topGaps.length > 0 && (
+              <Text style={[styles.caption, { color: colors.ink3, marginTop: 8 }]}>
+                {t('compare.focusOn')}
+                {lang === 'zh' ? '：' : ': '}
+                {topGaps
+                  .slice(0, 2)
+                  .map((r) => pick(r.dim, 'name'))
+                  .join(lang === 'zh' ? '、' : ', ')}
+              </Text>
+            )}
+          </Card>
+
           {/* biggest gaps, at a glance */}
           <SectionTitle>{t('compare.topGaps')}</SectionTitle>
           {topGaps.length === 0 ? (
@@ -227,6 +344,7 @@ export default function CompareScreen() {
                       {pick(r.dim, 'name')}
                     </Text>
                     <Text style={[styles.body, { color: colors.ink2 }]}>{lean(r)}</Text>
+                    <MiniSpectrum my={r.my} their={r.their} />
                   </Card>
                 </Pressable>
               ))}
@@ -296,15 +414,63 @@ const styles = StyleSheet.create({
   stack: { gap: 8 },
   bulletList: { gap: 8 },
 
+  meRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    marginBottom: 4,
+  },
   swapBtn: {
-    alignSelf: 'center',
-    marginVertical: 8,
     width: 44,
     height: 44,
     borderRadius: 22,
     borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  recentRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+  },
+  recentLabel: { fontSize: 12 },
+  recentChip: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  recentChipText: { fontSize: 12 },
+
+  distanceRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  distanceLevel: { fontSize: 14, fontWeight: '600' },
+  distanceTrack: {
+    height: 6,
+    borderRadius: 3,
+    marginTop: 8,
+    overflow: 'hidden',
+  },
+  distanceFill: { height: '100%', borderRadius: 3 },
+
+  mini: { height: 12, marginTop: 10, justifyContent: 'center' },
+  miniTrack: { height: 1, borderRadius: 1 },
+  miniConn: { position: 'absolute', top: 5, height: 2, borderRadius: 1 },
+  miniDot: {
+    position: 'absolute',
+    top: 2,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    borderWidth: 2,
   },
 
   segment: {

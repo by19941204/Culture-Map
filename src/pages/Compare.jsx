@@ -1,9 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { ArrowLeftRight, Briefcase, ChevronDown, Lightbulb, Plane } from 'lucide-react'
+import { ArrowLeftRight, Briefcase, ChevronDown, History, Lightbulb, Plane } from 'lucide-react'
 import { countries } from '../data/countries'
 import { dimensions } from '../data/dimensions'
-import { adviceBranch, rankDimensions } from '../lib/advice'
+import { adviceBranch, overallDistance, rankDimensions } from '../lib/advice'
 import CountrySelect from '../components/CountrySelect'
 import CultureMapChart from '../components/CultureMapChart'
 import GapBadge from '../components/GapBadge'
@@ -17,6 +17,31 @@ function initial(param, storageKey, fallback) {
   const saved = loadPref(storageKey)
   if (saved && isCode(saved)) return saved
   return fallback
+}
+
+// Tiny two-dot spectrum so a gap's size is visible at a glance.
+function MiniSpectrum({ my, their }) {
+  const pos = (v) => `${4 + (Math.max(0, Math.min(100, v)) / 100) * 92}%`
+  return (
+    <div className="relative mt-2.5 h-3" aria-hidden>
+      <div className="absolute inset-x-0 top-1/2 h-px bg-line" />
+      <div
+        className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded bg-baseline"
+        style={{
+          left: pos(Math.min(my, their)),
+          width: `${(Math.abs(my - their) / 100) * 92}%`,
+        }}
+      />
+      <span
+        className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-me ring-2 ring-card"
+        style={{ left: pos(my) }}
+      />
+      <span
+        className="absolute top-1/2 h-2 w-2 -translate-x-1/2 -translate-y-1/2 rounded-full bg-them ring-2 ring-card"
+        style={{ left: pos(their) }}
+      />
+    </div>
+  )
 }
 
 function LeanPhrase({ entry }) {
@@ -96,6 +121,19 @@ export default function Compare() {
   // so switching countries naturally resets the accordion without an effect
   const [overrides, setOverrides] = useState({ key: '', map: {} })
 
+  // counterparts the user compared against recently, most recent first
+  const [recent, setRecent] = useState(() =>
+    (loadPref('cm-recent') || '').split(',').filter(isCode),
+  )
+  const chooseThem = (code) => {
+    setTheirCode(code)
+    setRecent((prev) => {
+      const next = [code, ...prev.filter((c) => c !== code)].slice(0, 6)
+      savePref('cm-recent', next.join(','))
+      return next
+    })
+  }
+
   useEffect(() => {
     savePref('cm-me', myCode)
     savePref('cm-them', theirCode)
@@ -123,6 +161,7 @@ export default function Compare() {
     }))
 
   const topGaps = ranked.filter((r) => r.level !== 'aligned').slice(0, 3)
+  const distance = overallDistance(ranked)
 
   const tips = theirC && pick(theirC, context === 'work' ? 'workTips' : 'travelTips')
 
@@ -133,33 +172,62 @@ export default function Compare() {
         <p className="mt-1 text-sm text-ink2">{t('compare.subtitle')}</p>
       </div>
 
-      {/* selectors + scenario, one control row */}
+      {/* selectors + scenario: "me" is set once, so it stays compact; the
+          counterpart is the everyday choice and gets the prominent picker */}
       <div className="rounded-2xl border border-line bg-card p-4 shadow-sm">
-        <div className="flex flex-col items-stretch gap-3 sm:flex-row sm:items-end">
+        <div className="flex items-center justify-between gap-2">
           <CountrySelect
             value={myCode}
             onChange={setMyCode}
             label={t('compare.me')}
             colorClass="bg-me"
+            compact
           />
           <button
             onClick={() => {
               setMyCode(theirCode)
-              setTheirCode(myCode)
+              chooseThem(myCode)
             }}
-            className="mx-auto shrink-0 rounded-full border border-line p-2 text-ink2 hover:text-ink sm:mb-1.5"
+            className="shrink-0 rounded-full border border-line p-1.5 text-ink2 hover:text-ink"
             title={t('compare.swap')}
             aria-label={t('compare.swap')}
           >
-            <ArrowLeftRight size={16} aria-hidden />
+            <ArrowLeftRight size={14} aria-hidden />
           </button>
+        </div>
+
+        <div className="mt-2">
           <CountrySelect
             value={theirCode}
-            onChange={setTheirCode}
+            onChange={chooseThem}
             label={t('compare.them')}
             colorClass="bg-them"
           />
         </div>
+
+        {recent.filter((c) => c !== theirCode && c !== myCode).length > 0 && (
+          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+            <span className="flex items-center gap-1 text-xs text-ink3">
+              <History size={12} aria-hidden />
+              {t('compare.recent')}
+            </span>
+            {recent
+              .filter((c) => c !== theirCode && c !== myCode)
+              .slice(0, 4)
+              .map((code) => {
+                const c = countries.find((x) => x.code === code)
+                return (
+                  <button
+                    key={code}
+                    onClick={() => chooseThem(code)}
+                    className="rounded-full border border-line px-2.5 py-0.5 text-xs text-ink2 hover:border-baseline hover:text-ink"
+                  >
+                    {c.flag} {pick(c, 'name')}
+                  </button>
+                )
+              })}
+          </div>
+        )}
 
         <div className="mt-3 flex rounded-xl border border-line bg-page p-1">
           {[
@@ -187,6 +255,34 @@ export default function Compare() {
         </div>
       ) : (
         <>
+          {/* the one-glance verdict first, details after */}
+          <section aria-labelledby="distance">
+            <div className="rounded-2xl border border-line bg-card p-4 shadow-sm">
+              <div className="flex items-baseline justify-between gap-2">
+                <h2 id="distance" className="text-sm font-medium text-ink2">
+                  {t('compare.distance')}
+                </h2>
+                <span className="text-sm font-semibold">{t(`distance.${distance.level}`)}</span>
+              </div>
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-line">
+                <div
+                  className="h-full rounded-full bg-accent"
+                  style={{ width: `${Math.min(100, (distance.avg / 40) * 100)}%` }}
+                />
+              </div>
+              {topGaps.length > 0 && (
+                <p className="mt-2 text-xs text-ink3">
+                  {t('compare.focusOn')}
+                  {lang === 'zh' ? '：' : ': '}
+                  {topGaps
+                    .slice(0, 2)
+                    .map((r) => pick(r.dim, 'name'))
+                    .join(lang === 'zh' ? '、' : ', ')}
+                </p>
+              )}
+            </div>
+          </section>
+
           {/* biggest gaps, at a glance */}
           <section aria-labelledby="top-gaps">
             <h2 id="top-gaps" className="mb-2 text-lg font-semibold">
@@ -221,6 +317,7 @@ export default function Compare() {
                         ? `${t('compare.theyLean')}「${pick(r.dim, r.gap > 0 ? 'highLabel' : 'lowLabel')}」`
                         : `${t('compare.theyLean')} “${pick(r.dim, r.gap > 0 ? 'highLabel' : 'lowLabel')}”`}
                     </p>
+                    <MiniSpectrum my={r.my} their={r.their} />
                   </button>
                 ))}
               </div>

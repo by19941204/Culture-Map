@@ -3,5 +3,5 @@
 // by scripts/sync-shared.js — run `npm run sync` after editing the originals.
 export { countries, regions, regionOrder } from './shared/countries.js'
 export { dimensions } from './shared/dimensions.js'
-export { GAP_LARGE, GAP_MODERATE, gapLevel, adviceBranch, rankDimensions } from './shared/advice.js'
+export { GAP_LARGE, GAP_MODERATE, gapLevel, adviceBranch, overallDistance, rankDimensions } from './shared/advice.js'
 export { translations } from './shared/translations.js'

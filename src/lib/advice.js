@@ -18,6 +18,14 @@ export function adviceBranch(dimension, gap) {
   return gap > 0 ? dimension.advice.towardHigh : dimension.advice.towardLow
 }
 
+// One-glance summary: average absolute gap across all dimensions.
+export function overallDistance(ranked) {
+  if (!ranked.length) return null
+  const avg = ranked.reduce((sum, r) => sum + Math.abs(r.gap), 0) / ranked.length
+  const level = avg < 10 ? 'close' : avg < 22 ? 'medium' : 'far'
+  return { avg: Math.round(avg), level }
+}
+
 // Returns dimensions annotated with both scores + gap, sorted by |gap| descending.
 export function rankDimensions(dimensions, myCountry, theirCountry) {
   return dimensions

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { dimensions } from '../data/dimensions'
 import { useLang } from '../i18n/LanguageContext'
+import { gapLevel } from '../lib/advice'
 import GapBadge from './GapBadge'
 
 // Percent position clamped so a dot never bleeds past the track ends.
@@ -61,10 +62,12 @@ export default function CultureMapChart({ a, b }) {
           // nudge near-identical dots apart vertically so neither hides the other
           const nudge = b && Math.abs(av - bv) < 4 ? 4 : 0
           const dimName = pick(dim, 'name')
+          // big gaps get visual weight so the eye lands on them first
+          const heavy = b != null && gapLevel(bv - av) === 'large'
           return (
             <div key={dim.id} className="py-3">
               <div className="mb-1 flex items-baseline justify-between gap-2">
-                <span className="text-sm font-medium">{dimName}</span>
+                <span className={`text-sm ${heavy ? 'font-semibold' : 'font-medium'}`}>{dimName}</span>
                 {b && <GapBadge gap={bv - av} />}
               </div>
 
@@ -72,7 +75,7 @@ export default function CultureMapChart({ a, b }) {
                 <div className="absolute inset-x-0 top-1/2 h-px bg-line" aria-hidden />
                 {b && av !== bv && (
                   <div
-                    className="absolute top-1/2 h-0.5 -translate-y-1/2 rounded bg-baseline"
+                    className={`absolute top-1/2 -translate-y-1/2 rounded bg-baseline ${heavy ? 'h-[3px]' : 'h-0.5'}`}
                     style={{
                       left: pos(Math.min(av, bv)),
                       width: `${(Math.abs(av - bv) / 100) * 96}%`,
