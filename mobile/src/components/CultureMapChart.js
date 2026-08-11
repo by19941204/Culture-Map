@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useTheme } from '../theme'
 import { useLang } from '../i18n'
-import { dimensions } from '../data'
+import { dimensions, gapLevel } from '../data'
 import GapBadge from './GapBadge'
 
 const DOT_SIZE = 16 // 12px colored core + 2px card-colored ring on each side
@@ -59,6 +59,8 @@ function DimensionRow({ dim, a, b }) {
   // nudge near-identical dots apart vertically so neither hides the other
   const nudge = b && Math.abs(av - bv) < 4 ? 4 : 0
   const dimName = pick(dim, 'name')
+  // big gaps get visual weight so the eye lands on them first
+  const heavy = b != null && gapLevel(bv - av) === 'large'
 
   const ax = trackWidth * frac(av)
   const bx = b ? trackWidth * frac(bv) : 0
@@ -90,7 +92,10 @@ function DimensionRow({ dim, a, b }) {
   return (
     <View style={[styles.row, { borderTopColor: colors.line }]} testID={`map-row-${dim.id}`}>
       <View style={styles.nameRow}>
-        <Text style={[styles.dimName, { color: colors.ink }]} numberOfLines={1}>
+        <Text
+          style={[styles.dimName, { color: colors.ink }, heavy && { fontWeight: '600' }]}
+          numberOfLines={1}
+        >
           {dimName}
         </Text>
         {b ? <GapBadge gap={bv - av} /> : null}
@@ -114,6 +119,7 @@ function DimensionRow({ dim, a, b }) {
                     left: Math.min(ax, bx),
                     width: Math.abs(bx - ax),
                   },
+                  heavy && { height: 3 },
                 ]}
               />
             ) : null}

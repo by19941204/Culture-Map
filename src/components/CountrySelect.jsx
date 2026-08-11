@@ -3,7 +3,7 @@ import { ChevronDown, Search } from 'lucide-react'
 import { countries, regionOrder, regions } from '../data/countries'
 import { useLang } from '../i18n/LanguageContext'
 
-export default function CountrySelect({ value, onChange, label, colorClass }) {
+export default function CountrySelect({ value, onChange, label, colorClass, compact = false }) {
   const { lang, t, pick } = useLang()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
@@ -76,11 +76,13 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
   }
 
   return (
-    <div ref={rootRef} className="relative min-w-0 flex-1">
-      <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink2">
-        <span className={`h-2.5 w-2.5 rounded-full ${colorClass}`} aria-hidden />
-        {label}
-      </span>
+    <div ref={rootRef} className={`relative min-w-0 ${compact ? '' : 'flex-1'}`}>
+      {!compact && (
+        <span className="mb-1 flex items-center gap-1.5 text-xs font-medium text-ink2">
+          <span className={`h-2.5 w-2.5 rounded-full ${colorClass}`} aria-hidden />
+          {label}
+        </span>
+      )}
       <button
         ref={triggerRef}
         onClick={() => {
@@ -89,9 +91,24 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
         }}
         aria-expanded={open}
         aria-haspopup="listbox"
-        className="flex w-full items-center gap-2 rounded-xl border border-line bg-card px-3 py-2.5 text-left shadow-sm hover:border-baseline"
+        className={
+          compact
+            ? 'flex items-center gap-1.5 rounded-lg px-2 py-1 text-sm text-ink2 hover:bg-page'
+            : 'flex w-full items-center gap-2 rounded-xl border border-line bg-card px-3 py-2.5 text-left shadow-sm hover:border-baseline'
+        }
       >
-        {selected ? (
+        {compact ? (
+          <>
+            <span className={`h-2 w-2 rounded-full ${colorClass}`} aria-hidden />
+            <span className="text-xs text-ink3">{label}</span>
+            {selected && (
+              <span className="font-medium text-ink">
+                {selected.flag} {pick(selected, 'name')}
+              </span>
+            )}
+            <span className="text-xs text-accent">{t('compare.edit')}</span>
+          </>
+        ) : selected ? (
           <>
             <span className="text-xl leading-none" aria-hidden>{selected.flag}</span>
             <span className="truncate font-medium">{pick(selected, 'name')}</span>
@@ -102,7 +119,7 @@ export default function CountrySelect({ value, onChange, label, colorClass }) {
         ) : (
           <span className="text-ink3">{t('select.placeholder')}</span>
         )}
-        <ChevronDown size={16} className="ml-auto shrink-0 text-ink3" aria-hidden />
+        {!compact && <ChevronDown size={16} className="ml-auto shrink-0 text-ink3" aria-hidden />}
       </button>
 
       {open && (

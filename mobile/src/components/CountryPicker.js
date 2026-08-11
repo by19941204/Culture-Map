@@ -16,7 +16,7 @@ import { countries, regions, regionOrder } from '../data'
 // Country selector: a labeled trigger that opens a full-height sheet with
 // search + a region-grouped list. Mirrors the web CountrySelect combobox.
 // Props: { value, onChange, label, colorKey: 'me'|'them' }
-export default function CountryPicker({ value, onChange, label, colorKey }) {
+export default function CountryPicker({ value, onChange, label, colorKey, compact = false }) {
   const { colors } = useTheme()
   const { lang, t, pick } = useLang()
   const [open, setOpen] = useState(false)
@@ -50,28 +50,47 @@ export default function CountryPicker({ value, onChange, label, colorKey }) {
   const otherName = (c) => (lang === 'zh' ? c.nameEn : c.nameZh)
 
   return (
-    <View style={styles.root}>
-      <View style={styles.labelRow}>
-        <View style={[styles.labelDot, { backgroundColor: dotColor }]} />
-        <Text style={[styles.labelText, { color: colors.ink2 }]} numberOfLines={1}>
-          {label}
-        </Text>
-      </View>
+    <View style={compact ? null : styles.root}>
+      {!compact && (
+        <View style={styles.labelRow}>
+          <View style={[styles.labelDot, { backgroundColor: dotColor }]} />
+          <Text style={[styles.labelText, { color: colors.ink2 }]} numberOfLines={1}>
+            {label}
+          </Text>
+        </View>
+      )}
 
       <Pressable
         onPress={() => setOpen(true)}
         accessibilityRole="button"
         accessibilityLabel={`${label}: ${selected ? pick(selected, 'name') : t('select.placeholder')}`}
         testID={`picker-${colorKey}`}
-        style={({ pressed }) => [
-          styles.trigger,
-          {
-            backgroundColor: colors.card,
-            borderColor: pressed ? colors.baseline : colors.line,
-          },
-        ]}
+        style={({ pressed }) =>
+          compact
+            ? [styles.compactTrigger, pressed && { backgroundColor: colors.page }]
+            : [
+                styles.trigger,
+                {
+                  backgroundColor: colors.card,
+                  borderColor: pressed ? colors.baseline : colors.line,
+                },
+              ]
+        }
       >
-        {selected ? (
+        {compact ? (
+          <>
+            <View style={[styles.labelDot, { backgroundColor: dotColor }]} />
+            <Text style={[styles.compactLabel, { color: colors.ink3 }]} numberOfLines={1}>
+              {label}
+            </Text>
+            {selected && (
+              <Text style={[styles.compactName, { color: colors.ink }]} numberOfLines={1}>
+                {selected.flag} {pick(selected, 'name')}
+              </Text>
+            )}
+            <Text style={[styles.compactEdit, { color: colors.accent }]}>{t('compare.edit')}</Text>
+          </>
+        ) : selected ? (
           <>
             <Text style={styles.flag}>{selected.flag}</Text>
             <Text style={[styles.triggerName, { color: colors.ink }]} numberOfLines={1}>
@@ -86,7 +105,7 @@ export default function CountryPicker({ value, onChange, label, colorKey }) {
             {t('select.placeholder')}
           </Text>
         )}
-        <Feather name="chevron-down" size={16} color={colors.ink3} style={styles.chevron} />
+        {!compact && <Feather name="chevron-down" size={16} color={colors.ink3} style={styles.chevron} />}
       </Pressable>
 
       <Modal
@@ -197,6 +216,17 @@ export default function CountryPicker({ value, onChange, label, colorKey }) {
 
 const styles = StyleSheet.create({
   root: { flex: 1, minWidth: 0 },
+  compactTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    minHeight: 44,
+  },
+  compactLabel: { fontSize: 12 },
+  compactName: { fontSize: 14, fontWeight: '600', flexShrink: 1 },
+  compactEdit: { fontSize: 12 },
   labelRow: {
     flexDirection: 'row',
     alignItems: 'center',

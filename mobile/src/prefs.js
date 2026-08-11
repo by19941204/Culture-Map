@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const KEYS = ['cm-lang', 'cm-theme', 'cm-me', 'cm-them', 'cm-context']
+const KEYS = ['cm-lang', 'cm-theme', 'cm-me', 'cm-them', 'cm-context', 'cm-recent']
 
 // Reads all persisted preferences once at startup. Returns null until loaded
 // (the splash screen covers this — it resolves in a few ms).

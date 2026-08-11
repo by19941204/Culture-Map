@@ -70,5 +70,5 @@ tendencies of cultures, never individuals.
 
 ## 部署 Deployment
 
-- **GitHub Pages**: `vite.config.js` 中 `base` 已设为 `/culture-map/`，`public/404.html` 提供 SPA 路由回退。
+- **GitHub Pages**: `vite.config.js` 中 `base` 已设为 `/Culture-Map/`，`public/404.html` 提供 SPA 路由回退。
 - **Railway**: 见 `railway.json`（`npm run build` + `serve dist`）。
