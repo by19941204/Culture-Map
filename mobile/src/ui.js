@@ -6,9 +6,11 @@ import { useLang } from './i18n'
 
 // Standard screen chrome: safe area, header with title + language/theme
 // toggles, scrollable body with consistent padding.
+const THEME_ICONS = { auto: 'smartphone', light: 'sun', dark: 'moon' }
+
 export function Screen({ title, children, scroll = true, headerExtra = null }) {
-  const { colors, dark, toggleTheme } = useTheme()
-  const { lang, toggleLang } = useLang()
+  const { colors, mode, cycleTheme } = useTheme()
+  const { lang, t, toggleLang } = useLang()
 
   const body = scroll ? (
     <ScrollView
@@ -42,13 +44,13 @@ export function Screen({ title, children, scroll = true, headerExtra = null }) {
           </Text>
         </Pressable>
         <Pressable
-          onPress={toggleTheme}
+          onPress={cycleTheme}
           style={styles.headerBtn}
           accessibilityRole="button"
-          accessibilityLabel={dark ? 'Light mode' : 'Dark mode'}
+          accessibilityLabel={t(`theme.${mode}`)}
           testID="toggle-theme"
         >
-          <Feather name={dark ? 'sun' : 'moon'} size={16} color={colors.ink2} />
+          <Feather name={THEME_ICONS[mode]} size={16} color={colors.ink2} />
         </Pressable>
       </View>
       {body}

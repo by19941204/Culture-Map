@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useColorScheme } from 'react-native'
 import { StatusBar } from 'expo-status-bar'
+import { getLocales } from 'expo-localization'
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -34,12 +35,15 @@ function CountriesStack() {
 
 function Root({ initialPrefs }) {
   const system = useColorScheme()
+  // null = follow the system appearance
   const [themePref, setThemePref] = useState(
     ['light', 'dark'].includes(initialPrefs['cm-theme']) ? initialPrefs['cm-theme'] : null,
   )
-  const [lang, setLang] = useState(
-    ['zh', 'en'].includes(initialPrefs['cm-lang']) ? initialPrefs['cm-lang'] : 'zh',
-  )
+  const [lang, setLang] = useState(() => {
+    if (['zh', 'en'].includes(initialPrefs['cm-lang'])) return initialPrefs['cm-lang']
+    // first launch: follow the device language
+    return getLocales()[0]?.languageCode === 'zh' ? 'zh' : 'en'
+  })
 
   const dark = (themePref ?? system) === 'dark'
   const colors = dark ? palettes.dark : palettes.light
@@ -48,13 +52,15 @@ function Root({ initialPrefs }) {
     () => ({
       colors,
       dark,
-      toggleTheme: () => {
-        const next = dark ? 'light' : 'dark'
+      mode: themePref ?? 'auto',
+      // cycle: follow system -> light -> dark -> follow system
+      cycleTheme: () => {
+        const next = themePref === null ? 'light' : themePref === 'light' ? 'dark' : null
         setThemePref(next)
-        savePref('cm-theme', next)
+        savePref('cm-theme', next ?? 'auto')
       },
     }),
-    [colors, dark],
+    [colors, dark, themePref],
   )
 
   const langValue = useMemo(

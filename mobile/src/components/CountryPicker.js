@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { Feather } from '@expo/vector-icons'
+import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme'
 import { useLang } from '../i18n'
 import { countries, regions, regionOrder } from '../data'
@@ -43,6 +44,7 @@ export default function CountryPicker({ value, onChange, label, colorKey, compac
   }
 
   const choose = (code) => {
+    Haptics.selectionAsync().catch(() => {})
     onChange(code)
     close()
   }
