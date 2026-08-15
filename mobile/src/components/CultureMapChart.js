@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import { useTheme } from '../theme'
 import { useLang } from '../i18n'
 import { dimensions, gapLevel } from '../data'
@@ -52,7 +53,10 @@ function DimensionRow({ dim, a, b }) {
   const { pick } = useLang()
   const [trackWidth, setTrackWidth] = useState(0)
   const [active, setActive] = useState(null) // 'a' | 'b' | null, per row
-  const toggle = (id) => setActive((cur) => (cur === id ? null : id))
+  const toggle = (id) => {
+    Haptics.selectionAsync().catch(() => {})
+    setActive((cur) => (cur === id ? null : id))
+  }
 
   const av = a.scores[dim.id]
   const bv = b ? b.scores[dim.id] : null

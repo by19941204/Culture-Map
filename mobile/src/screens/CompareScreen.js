@@ -1,18 +1,32 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { LayoutAnimation, Modal, Platform, Pressable, Share, StyleSheet, Text, UIManager, View } from 'react-native'
+import * as Haptics from 'expo-haptics'
 import { Feather } from '@expo/vector-icons'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Bullet, Card, Screen, SectionTitle } from '../ui'
 import { useTheme } from '../theme'
 import { useLang } from '../i18n'
 import { adviceBranch, countries, dimensions, overallDistance, rankDimensions } from '../data'
-import { usePersistedState } from '../prefs'
+import { savePref, usePersistedState } from '../prefs'
 import CountryPicker from '../components/CountryPicker'
 import CultureMapChart from '../components/CultureMapChart'
 import GapBadge from '../components/GapBadge'
 
 const isCode = (v) => countries.some((c) => c.code === v)
 const isCtx = (v) => v === 'work' || v === 'travel'
+
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true)
+}
+
+const buzz = () => Haptics.selectionAsync().catch(() => {})
+const animateNext = () => {
+  try {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut)
+  } catch {
+    // layout animation is best-effort (unsupported on some web targets)
+  }
+}
 
 // Tiny two-dot spectrum so a gap's size is visible at a glance.
 function MiniSpectrum({ my, their }) {
@@ -183,11 +197,13 @@ export default function CompareScreen() {
   const defaultOpen = new Set(ranked.slice(0, 3).map((r) => r.dim.id))
   const isExpanded = (id) =>
     overrides.key === pairKey && id in overrides.map ? overrides.map[id] : defaultOpen.has(id)
-  const setOpen = (id, open) =>
+  const setOpen = (id, open) => {
+    animateNext()
     setOverrides((prev) => ({
       key: pairKey,
       map: { ...(prev.key === pairKey ? prev.map : {}), [id]: open },
     }))
+  }
 
   const topGaps = ranked.filter((r) => r.level !== 'aligned').slice(0, 3)
   const distance = overallDistance(ranked)
@@ -195,10 +211,41 @@ export default function CompareScreen() {
 
   const recent = recentStr.split(',').filter(isCode)
   const chooseThem = (code) => {
+    buzz()
     setThem(code)
     recordRecent(code)
   }
   const recentChips = recent.filter((c) => c !== them && c !== me).slice(0, 4)
+
+  // one-time first-launch setup: pick your own culture before anything else
+  const [showOnboard, setShowOnboard] = useState(
+    () => !initialPrefs?.['cm-me'] && !initialPrefs?.['cm-onboarded'],
+  )
+  const finishOnboard = () => {
+    savePref('cm-onboarded', '1')
+    animateNext()
+    setShowOnboard(false)
+  }
+
+  const shareComparison = async () => {
+    const sep = lang === 'zh' ? '：' : ': '
+    const lines = [
+      `${myCountry.flag} ${pick(myCountry, 'name')} vs ${theirCountry.flag} ${pick(theirCountry, 'name')} · Culture Map`,
+      `${t('compare.distance')}${sep}${t(`distance.${distance.level}`)}`,
+      ...topGaps.map((r, i) => `#${i + 1} ${pick(r.dim, 'name')} — ${lean(r)}`),
+      '',
+      ...(ranked.length
+        ? adviceBranch(ranked[0].dim, ranked[0].gap)[ctx][lang].slice(0, 2).map((s) => `· ${s}`)
+        : []),
+      '',
+      'https://by19941204.github.io/Culture-Map/',
+    ]
+    try {
+      await Share.share({ message: lines.join('\n') })
+    } catch {
+      // user dismissed the sheet or share is unavailable
+    }
+  }
 
   const lean = (r) => {
     const label = pick(r.dim, r.gap > 0 ? 'highLabel' : 'lowLabel')
@@ -208,7 +255,42 @@ export default function CompareScreen() {
   }
 
   return (
-    <Screen title={t('compare.title')}>
+    <Screen
+      title={t('compare.title')}
+      headerExtra={
+        !same ? (
+          <Pressable
+            onPress={shareComparison}
+            hitSlop={8}
+            style={styles.shareBtn}
+            accessibilityRole="button"
+            accessibilityLabel={t('compare.share')}
+            testID="share"
+          >
+            <Feather name="share" size={16} color={colors.ink2} />
+          </Pressable>
+        ) : null
+      }
+    >
+      <Modal visible={showOnboard} animationType="fade" transparent onRequestClose={finishOnboard}>
+        <View style={styles.onboardBackdrop} testID="onboarding">
+          <Card style={styles.onboardCard}>
+            <Text style={[styles.onboardTitle, { color: colors.ink }]}>{t('onboard.title')}</Text>
+            <Text style={[styles.body, { color: colors.ink2, marginTop: 6, marginBottom: 16 }]}>
+              {t('onboard.subtitle')}
+            </Text>
+            <CountryPicker value={me} onChange={setMe} label={t('compare.me')} colorKey="me" />
+            <Pressable
+              onPress={finishOnboard}
+              accessibilityRole="button"
+              testID="onboarding-done"
+              style={[styles.onboardBtn, { backgroundColor: colors.accent }]}
+            >
+              <Text style={styles.onboardBtnText}>{t('onboard.done')}</Text>
+            </Pressable>
+          </Card>
+        </View>
+      </Modal>
       {/* selectors + scenario */}
       <Card>
         {/* "me" is set once — keep it compact; the counterpart is the
@@ -263,7 +345,10 @@ export default function CompareScreen() {
             return (
               <Pressable
                 key={id}
-                onPress={() => setCtx(id)}
+                onPress={() => {
+                  buzz()
+                  setCtx(id)
+                }}
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={t(key)}
@@ -460,6 +545,24 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   distanceFill: { height: '100%', borderRadius: 3 },
+
+  shareBtn: { padding: 8 },
+
+  onboardBackdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  onboardCard: { padding: 20 },
+  onboardTitle: { fontSize: 20, fontWeight: '700' },
+  onboardBtn: {
+    marginTop: 16,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  onboardBtnText: { color: '#ffffff', fontSize: 15, fontWeight: '600' },
 
   mini: { height: 12, marginTop: 10, justifyContent: 'center' },
   miniTrack: { height: 1, borderRadius: 1 },

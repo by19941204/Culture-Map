@@ -22,6 +22,18 @@ export const translations = {
   'distance.medium': { zh: '中等差异', en: 'Moderately different' },
   'distance.far': { zh: '差异较大', en: 'Substantially different' },
   'compare.focusOn': { zh: '重点关注', en: 'Focus on' },
+  'compare.share': { zh: '分享对比结果', en: 'Share comparison' },
+
+  'onboard.title': { zh: '欢迎使用文化地图', en: 'Welcome to Culture Map' },
+  'onboard.subtitle': {
+    zh: '先选择你的文化背景，之后随时可以修改。',
+    en: 'First, pick your own cultural background — you can change it anytime.',
+  },
+  'onboard.done': { zh: '开始使用', en: 'Get started' },
+
+  'theme.light': { zh: '浅色模式', en: 'Light mode' },
+  'theme.dark': { zh: '深色模式', en: 'Dark mode' },
+  'theme.auto': { zh: '跟随系统', en: 'Follow system' },
   'context.work': { zh: '工作协作', en: 'Work' },
   'context.travel': { zh: '旅行社交', en: 'Travel' },
   'compare.topGaps': { zh: '重点注意的差异', en: 'Differences to watch' },
